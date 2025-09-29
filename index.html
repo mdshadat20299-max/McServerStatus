@@ -5,54 +5,131 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Minecraft Server Status Checker</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- confetti & qrcode libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js" defer></script>
 </head>
 <body>
-  <div class="theme-toggle">
-    <button id="themeBtn">🌙</button>
-  </div>
-
   <div class="container">
-    <div class="card fade-in">
-      <h1>Minecraft Server Status Checker</h1>
-      <div class="row" style="margin-top:10px">
-        <input id="serverIp" type="text" placeholder="play.example.com or 1.2.3.4:25565"/>
-        <button id="checkBtn">Check</button>
+    <header class="sticky">
+      <div class="titleWrap">
+        <h1 id="typingHeader" aria-hidden="true"></h1>
+        <div class="titleSub">Premium server dashboard</div>
       </div>
-      <div class="muted small" style="margin-top:8px">
-        Uses <strong>api.mcsrvstat.us</strong> to ping servers directly from the browser.
+      <div class="controls">
+        <button id="refreshBtn" title="Refresh last check">⟳</button>
+        <button id="copyBtn" title="Copy IP">📋</button>
+        <label class="auto-refresh">
+          <input type="checkbox" id="autoRefresh"> Auto-refresh
+        </label>
+      </div>
+    </header>
+
+    <main class="card fade-in">
+      <div class="searchRow">
+        <div class="inputWrap">
+          <input id="serverIp" type="text" placeholder="play.example.com or 1.2.3.4:25565" aria-label="Server IP"/>
+          <select id="historyDropdown" title="Recent servers"></select>
+        </div>
+        <div class="btnsWrap">
+          <button id="checkBtn">Check</button>
+          <button id="qrBtn" title="Generate QR">🔳</button>
+        </div>
       </div>
 
-      <div id="result" style="margin-top:14px;display:none">
+      <div id="result" class="result" style="display:none">
         <div class="grid">
-          <div class="stat"><strong>Status</strong><div id="statusText" class="small monos"></div></div>
-          <div class="stat"><strong>MOTD</strong><div id="motd" class="small"></div></div>
-          <div class="stat"><strong>Version</strong><div id="version" class="small monos"></div></div>
-          <div class="stat"><strong>Players</strong><div id="players" class="small monos"></div></div>
-          <div class="stat"><strong>Software</strong><div id="software" class="small"></div></div>
-          <div class="stat"><strong>Plugins</strong><div id="plugins" class="small"></div></div>
-          <div class="stat" id="faviconCard"><strong>Server Icon</strong>
-            <div style="margin-top:8px"><img id="faviconImg" class="favicon" src="" alt="favicon"/></div>
+          <div class="stat statusCard">
+            <div class="statHead"><strong>Status</strong><span id="statusBadge" class="badge">—</span></div>
+            <div id="statusText" class="small monos">—</div>
+            <div id="pingText" class="tiny muted">—</div>
           </div>
-          <div class="stat"><strong>Other info</strong><div id="otherInfo" class="small"></div></div>
+
+          <div class="stat">
+            <div class="statHead"><strong>MOTD</strong><div class="rainbow" id="motd">—</div></div>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>Version</strong><span id="versionBadge" class="badge">—</span></div>
+            <div id="version" class="small monos">—</div>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>Players</strong><div id="playerBadge" class="badge">—</div></div>
+            <div id="players" class="small monos">—</div>
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="progressFill"></div></div>
+            <canvas id="playersChart" class="mini-chart" width="280" height="60" aria-hidden="true"></canvas>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>Software</strong><span id="softBadge" class="badge">—</span></div>
+            <div id="software" class="small">—</div>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>Plugins <span id="pluginCount" class="countBadge">0</span></strong></div>
+            <div id="plugins" class="small collapsible">—</div>
+            <button id="togglePlugins" class="small toggle-btn" style="display:none">Show More</button>
+          </div>
+
+          <div class="stat" id="faviconCard">
+            <div class="statHead"><strong>Server Icon</strong></div>
+            <div class="iconWrap"><img id="faviconImg" class="favicon" src="" alt="Server icon"/></div>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>QR / Share</strong></div>
+            <canvas id="qrCode" class="qr-canvas" width="128" height="128" aria-hidden="true"></canvas>
+            <div class="tiny muted">Scan to join</div>
+          </div>
+
+          <div class="stat">
+            <div class="statHead"><strong>Extra</strong></div>
+            <div id="otherInfo" class="small">—</div>
+          </div>
         </div>
 
-        <div style="margin-top:12px" class="card">
-          <strong>Online players (if reported)</strong>
+        <div class="card inner-card">
+          <div class="playersHeader">
+            <strong>Online players (click avatar to open NameMC)</strong>
+            <div class="playersActions">
+              <button id="collapsePlayers">Collapse</button>
+              <button id="expandPlayers">Expand</button>
+            </div>
+          </div>
           <div id="playersList" class="players-list small" style="margin-top:8px">—</div>
         </div>
 
-        <div style="margin-top:12px" class="card">
-          <strong>Raw JSON (for power users)</strong>
-          <pre id="rawJson" class="small"></pre>
+        <div class="card inner-card small">
+          <div class="jsonHead">
+            <strong>Raw JSON (for power users)</strong>
+            <div class="jsonActions">
+              <button id="copyJson">Copy JSON</button>
+              <button id="toggleJson">Collapse</button>
+            </div>
+          </div>
+          <pre id="rawJson" class="json-box" aria-live="polite"></pre>
         </div>
 
-        <footer>
-          Notes: Some servers hide version ranges, plugins, or player names. Uptime cannot be shown reliably.
+        <div class="card inner-card">
+          <div class="analytics">
+            <div><strong>Last checks</strong><div id="checksList" class="tiny muted">—</div></div>
+            <div><strong>Trend</strong><canvas id="trendChart" width="320" height="80"></canvas></div>
+          </div>
+        </div>
+
+        <footer class="resultFooter">
+          <div class="footer-glow"></div>
+          <div class="credit">This web is created by <strong>Alif</strong></div>
+          <div class="clock" id="footerClock" aria-live="polite"></div>
         </footer>
       </div>
-    </div>
+    </main>
   </div>
 
-  <script src="script.js"></script>
+  <div id="loadingSpinner" class="spinner" style="display:none" aria-hidden="true"></div>
+
+  <!-- Site JS -->
+  <script src="script.js" defer></script>
 </body>
 </html>

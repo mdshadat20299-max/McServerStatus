@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Minecraft Server Status Checker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="theme-toggle">
+    <button id="themeBtn">🌙</button>
+  </div>
+
+  <div class="container">
+    <div class="card fade-in">
+      <h1>Minecraft Server Status Checker</h1>
+      <div class="row" style="margin-top:10px">
+        <input id="serverIp" type="text" placeholder="play.example.com or 1.2.3.4:25565"/>
+        <button id="checkBtn">Check</button>
+      </div>
+      <div class="muted small" style="margin-top:8px">
+        Uses <strong>api.mcsrvstat.us</strong> to ping servers directly from the browser.
+      </div>
+
+      <div id="result" style="margin-top:14px;display:none">
+        <div class="grid">
+          <div class="stat"><strong>Status</strong><div id="statusText" class="small monos"></div></div>
+          <div class="stat"><strong>MOTD</strong><div id="motd" class="small"></div></div>
+          <div class="stat"><strong>Version</strong><div id="version" class="small monos"></div></div>
+          <div class="stat"><strong>Players</strong><div id="players" class="small monos"></div></div>
+          <div class="stat"><strong>Software</strong><div id="software" class="small"></div></div>
+          <div class="stat"><strong>Plugins</strong><div id="plugins" class="small"></div></div>
+          <div class="stat" id="faviconCard"><strong>Server Icon</strong>
+            <div style="margin-top:8px"><img id="faviconImg" class="favicon" src="" alt="favicon"/></div>
+          </div>
+          <div class="stat"><strong>Other info</strong><div id="otherInfo" class="small"></div></div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <strong>Online players (if reported)</strong>
+          <div id="playersList" class="players-list small" style="margin-top:8px">—</div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <strong>Raw JSON (for power users)</strong>
+          <pre id="rawJson" class="small"></pre>
+        </div>
+
+        <footer>
+          Notes: Some servers hide version ranges, plugins, or player names. Uptime cannot be shown reliably.
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
